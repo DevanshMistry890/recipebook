@@ -1,13 +1,6 @@
-body {
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-  background: linear-gradient(134deg, #EBE3F0 0%, #D5D4F9 47%, #CFDFF8 100%);
-}
-
 .glass-card {
   background: rgba(255, 255, 255, 0.30);
-  box-shadow: -1px -1px 4px #D0E0F9 inset;
+  box-shadow: -1px -1px 4px #D0E0F9 inset !important;
   border-radius: 15px;
   border: 2.50px white solid;
   backdrop-filter: blur(5px)
@@ -35,4 +28,101 @@ body {
   object-fit: cover;
   border-radius: 8px;
   margin-bottom: 20px;
+}
+
+.custom-button {
+  background: linear-gradient(to right, #a855f7, #ec4899) !important;
+  color: white;
+  font-weight: bold;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.25em;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  width: fit-content;
+  transition: background 0.3s ease;
+  outline: none;
+}
+
+.custom-button.recipe {
+  padding: 0.75rem 5rem !important;
+}
+
+
+.custom-button:hover {
+  background: linear-gradient(to right, #9333ea, #db2777);
+}
+
+.custom-button:focus {
+  box-shadow: 0 0 0 4px rgba(156, 39, 176, 0.3);
+}
+
+.custom-nav {
+  margin: 0.5% 5%;
+  border-radius: 10px !important;
+}
+
+@media (max-width: 991px) {
+  .custom-nav {
+    margin: 0.5% 3.5% !important;
+  }
+}
+
+#basic-navbar-nav {
+  font-size: 1.3em !important;
+}
+
+@media (min-width: 991px) {
+  #basic-navbar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #basic-navbar-nav>.mx-auto {
+    flex: 0 0 80%;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+
+  #basic-navbar-nav>.ms-auto {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 991px) {
+  #basic-navbar-nav>.ms-auto {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+/* recipe-detail adjustments */
+.recipe-container{
+  margin: 0 auto!important;
+  width: 90% !important;
+}
+.recipe-layout {
+  height: 70vh;
+  display: flex;
+  overflow: hidden;
+}
+
+.left-pane {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: fit-content;
+}
+
+.right-pane {
+  max-height: 70vh;
+  /* Match height to layout */
+  overflow-y: auto;
+  padding-right: 2rem;
+  padding-left: 0.2rem;
 }

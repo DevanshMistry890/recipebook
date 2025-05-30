@@ -62,36 +62,52 @@ function RecipeDetailPage({ currentUser }) {
   }
 
   return (
-    <Container className="my-4 p-4 shadow-sm rounded glass-card ">
+    <Container fluid className="my-4 p-4 shadow-sm rounded glass-card d-flex recipe-container">
       {currentUser && <p className="text-end text-muted small">Logged in as: {currentUser.email}</p>}
-      <Row className="justify-content-center mb-4">
-        <Col md={8}>
-          <Image src={recipeData.imageUrl} alt={recipeData.name} fluid rounded />
+      <Row className="d-flex recipe-layout">
+        <Col md={6} className="left-pane pe-1">
+          <Image src={recipeData.imageUrl} alt={recipeData.name} fluid rounded className="mb-3 w-80 h-auto" />
+          <Row className="mb-4">
+            <Col>
+              <div className="info-block">
+                <p className="mb-1 text-muted">Cook:</p>
+                <h4 className="fw-bold"><i className="far fa-clock"></i> {recipeData.cookTime}</h4>
+              </div>
+            </Col>
+            <Col>
+              <div className="info-block">
+                <p className="mb-1 text-muted">Serves:</p>
+                <h4 className="fw-bold"><i className="fas fa-users"></i> {recipeData.serves}</h4>
+              </div>
+            </Col>
+          </Row>
+        </Col>
+        <Col md={6} className="right-pane">
+          <h2 className="mb-3 text-left">{recipeData.name}</h2>
+          <p className="description text-justify" dangerouslySetInnerHTML={{ __html: recipeData.description }}></p>
+          <h3 className="mt-4 mb-3">Ingredients</h3>
+          {recipeData.ingredients.length > 0 ? (<>
+            <ul>
+              {recipeData.ingredients.map((ingredient, index) => (
+                <li key={index}>{ingredient}</li>
+              ))}
+            </ul>
+            <Row className="mb-4">
+              <div className="d-flex justify-content-evenly mt-4">
+                <button type="" className="custom-button recipe">
+                  Save Recipe
+                </button>
+                <button type="" className="custom-button recipe">
+                  Print
+                </button>
+              </div>
+            </Row>
+          </>
+          ) : (
+            <p className="text-muted">No ingredients listed.</p>
+          )}
         </Col>
       </Row>
-      <Row className="mb-3">
-        <Col xs={6} className="text-center">
-          <p className="mb-0 text-muted">Cook:</p>
-          <h4 className="fw-bold">{recipeData.cookTime}</h4>
-        </Col>
-        <Col xs={6} className="text-center">
-          <p className="mb-0 text-muted">Serves:</p>
-          <h4 className="fw-bold">{recipeData.serves}</h4>
-        </Col>
-      </Row>
-      <h2 className="mb-3 text-center">{recipeData.name}</h2>
-      <p className="description text-justify" dangerouslySetInnerHTML={{ __html: recipeData.description }}></p>
-
-      <h3 className="mt-4 mb-3">Ingredients</h3>
-      {recipeData.ingredients.length > 0 ? (
-        <ul>
-          {recipeData.ingredients.map((ingredient, index) => (
-            <li key={index}>{ingredient}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-muted">No ingredients listed.</p>
-      )}
     </Container>
   );
 }

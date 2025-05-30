@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import RecipeCardList from '../components/RecipeCardList'; // To display search results
 import { SPOONACULAR_API_KEY, SPOONACULAR_BASE_URL } from '../spoonacularApi';
 import classicLentilSoup from '../assets/classic-lentil-soup.jpg'; // Fallback image
+import '../index.css'; // Custom styles for the page
 
 function FindRecipePage({ currentUser }) {
   const [ingredients, setIngredients] = useState('');
@@ -59,7 +60,7 @@ function FindRecipePage({ currentUser }) {
   const mealTypeOptions = ['Main Course', 'Dessert', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Beverage'];
 
   return (
-    <Container className="my-4 p-4 shadow-sm rounded">
+    <Container className="my-4 p-4 shadow-sm rounded glass-card">
       <h2 className="mb-4 text-center">Find Your Recipe</h2>
       {currentUser && <p className="text-muted text-center">Logged in as: {currentUser.email}</p>}
       <Form onSubmit={handleFindRecipes}>
@@ -84,7 +85,11 @@ function FindRecipePage({ currentUser }) {
           options={mealTypeOptions}
           onSelect={setMealType}
         />
-        <Button text="Find Recipes" type="submit" />
+        <div className="d-flex justify-content-center mt-4">
+          <button type="submit" className="custom-button recipe">
+            Find Recipes
+          </button>
+        </div>
       </Form>
 
       <hr className="my-5" />

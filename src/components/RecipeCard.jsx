@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from 'react-bootstrap';
-import defaultImage from '../assets/classic-lentil-soup.jpg'; // Placeholder image
+import defaultImage from '../assets/classic-lentil-soup.jpg';
 
 function RecipeCard({ recipeName, cookTime, imageUrl, id }) {
   return (
