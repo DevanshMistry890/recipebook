@@ -1,12 +1,36 @@
-# React + Vite
+# Smart Recipe Recommendation Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A responsive and feature-rich web application built with React.js that allows users to discover, search, and save recipes based on their preferences. The app integrates Firebase Authentication for user management and the Spoonacular API for dynamic recipe data.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **User Authentication** using Firebase (Email/Password login, logout, and sign-up)
+- **Recipe Discovery** via Spoonacular API (random suggestions and search)
+- **Detailed Recipe View** with ingredients, instructions, and images
+- **Saved Recipes** (currently uses dummy data for future backend integration)
+- **Responsive Design** using `react-bootstrap` grid system
+- **Custom Styling** through hand-crafted CSS, overriding Bootstrap defaults
+- **Reusable Components** (Buttons, Dropdowns, Input Fields, Cards)
+- **Icon Support** via Font Awesome
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🧑‍💻 Tech Stack
+
+- **Frontend**: React.js, Vite, React Router DOM
+- **UI Framework**: React-Bootstrap (for layout only)
+- **Styling**: Custom CSS (no Bootstrap theme)
+- **Authentication**: Firebase Authentication
+- **API Integration**: Spoonacular API
+- **Icons**: Font Awesome
+
+---
+
+## 🔧 Installation & Setup
+
+### Prerequisites
+
+- Node.js and npm
+- Firebase project with Email/Password auth enabled
+- Spoonacular API key
+
