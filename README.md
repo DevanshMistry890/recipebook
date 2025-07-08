@@ -1,6 +1,7 @@
 🍽️ Smart Recipe Recommendation Website
 A responsive and feature-rich web application built with React.js, allowing users to discover, search, and manage recipes based on their preferences. The app integrates Firebase Authentication and fetches real-time data from the Spoonacular API.
 
+See Development Live server: https://devanshmistry890.github.io/recipebook/
 🚀 Features
 🔐 User Authentication – Sign up, login, and logout with Firebase Email/Password authentication
 
