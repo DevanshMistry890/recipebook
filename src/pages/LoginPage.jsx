@@ -50,7 +50,11 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Button text={loading ? "Logging in..." : "Log In"} type="submit" disabled={loading} />
+            <div className="d-flex justify-content-center mt-4 mb-1">
+              <button type="submit" disabled={loading} className="custom-button pd">
+                {loading ? "Logging in..." : "Log In"}
+              </button>
+            </div>
           </Form>
           <p className="text-center mt-3">
             No account? <Link to="/signup">Sign up Here</Link>

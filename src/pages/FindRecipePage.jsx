@@ -4,16 +4,21 @@ import InputField from '../components/InputField';
 import Dropdown from '../components/Dropdown';
 import Button from '../components/Button';
 import RecipeCardList from '../components/RecipeCardList'; // To display search results
-import { SPOONACULAR_API_KEY, SPOONACULAR_BASE_URL } from '../spoonacularApi';
-import classicLentilSoup from '../assets/classic-lentil-soup.jpg'; // Fallback image
-import '../index.css'; // Custom styles for the page
+
+
+const BACKEND_BASE_URL = 'http://localhost:5000';
+
 
 function FindRecipePage({ currentUser }) {
-  const [ingredients, setIngredients] = useState('');
+  const [naturalLanguageQuery, setNaturalLanguageQuery] = useState('');
   const [dietaryRestrictions, setDietaryRestrictions] = useState('');
   const [cuisinePreferences, setCuisinePreferences] = useState('');
   const [mealType, setMealType] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+
+  // State variables for the LLM's response and formatted recipes for cards
+  const [llmResponse, setLlmResponse] = useState(null);
+  const [searchResults, setSearchResults] = useState([]); // Formatted data for RecipeCardList
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -21,35 +26,51 @@ function FindRecipePage({ currentUser }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSearchResults([]);
+    setLlmResponse(null); // Clear previous LLM response
+    setSearchResults([]); // Clear previous search results
 
-    let queryParams = new URLSearchParams();
-    if (ingredients) queryParams.append('query', ingredients);
-    if (dietaryRestrictions) queryParams.append('diet', dietaryRestrictions);
-    if (cuisinePreferences) queryParams.append('cuisine', cuisinePreferences);
-    if (mealType) queryParams.append('type', mealType);
-    queryParams.append('number', 12); // Fetch 12 recipes
-    queryParams.append('apiKey', SPOONACULAR_API_KEY);
+    if (!naturalLanguageQuery) {
+      setError(new Error("Please enter a query for the recipe search."));
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch(
-        `${SPOONACULAR_BASE_URL}/recipes/complexSearch?${queryParams.toString()}`
-      );
+      const response = await fetch(`${BACKEND_BASE_URL}/api/recipes/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: naturalLanguageQuery }),
+      });
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
+
       const data = await response.json();
-      const formattedResults = data.results.map(recipe => ({
-        id: recipe.id,
-        name: recipe.title,
-        // Cook time is not directly available in complexSearch, might need to fetch details for each
-        cookTime: 'N/A',
-        imageUrl: recipe.image || classicLentilSoup,
-      }));
-      setSearchResults(formattedResults);
+      console.log("Backend RAG Response:", data);
+
+      // Set the LLM's generated response
+      setLlmResponse(data.llm_response);
+
+      // Format retrieved_recipes for RecipeCardList component
+      if (data.retrieved_recipes && Array.isArray(data.retrieved_recipes)) {
+        const formattedForCardList = data.retrieved_recipes.map(recipe => ({
+          id: recipe._id || recipe.title.replace(/\s+/g, '-').toLowerCase(), // Use _id, fallback to title-based ID
+          name: recipe.title,
+          cookTime: recipe.score ? `${Math.round(recipe.score * 100)}% Match` : 'N/A',
+          imageUrl: recipe.imageUrl, // You'll need logic to get actual images if desired
+          ingredients: recipe.ingredients, // Keep for potential future detail pages
+          instructions: recipe.instructions, // Keep for potential future detail pages
+        }));
+        setSearchResults(formattedForCardList);
+      }
+
     } catch (err) {
       setError(err);
-      console.error("Failed to fetch recipes:", err);
+      console.error("Failed to fetch recipes from backend:", err);
     } finally {
       setLoading(false);
     }
@@ -60,58 +81,85 @@ function FindRecipePage({ currentUser }) {
   const mealTypeOptions = ['Main Course', 'Dessert', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Beverage'];
 
   return (
-    <Container className="my-4 p-4 shadow-sm rounded glass-card">
-      <h2 className="mb-4 text-center">Find Your Recipe</h2>
-      {currentUser && <p className="text-muted text-center">Logged in as: {currentUser.email}</p>}
-      <Form onSubmit={handleFindRecipes}>
-        <InputField
-          label="Ingredients"
-          placeholder="e.g., chicken, rice"
-          value={ingredients}
-          onChange={(e) => setIngredients(e.target.value)}
-        />
-        <Dropdown
-          label="Dietary Restrictions"
-          options={dietaryOptions}
-          onSelect={setDietaryRestrictions}
-        />
-        <Dropdown
-          label="Cuisine Preferences"
-          options={cuisineOptions}
-          onSelect={setCuisinePreferences}
-        />
-        <Dropdown
-          label="Meal Type"
-          options={mealTypeOptions}
-          onSelect={setMealType}
-        />
-        <div className="d-flex justify-content-center mt-4">
-          <button type="submit" className="custom-button recipe">
-            Find Recipes
-          </button>
+    <section className="tstbite-components py-5 bg-lightest-gray">
+      <Container className="bg-white p-4 p-md-5 rounded">
+        <div className="text-center mb-4">
+          <h2 className="mb-2 h1">Find Your Recipe</h2>
+          {currentUser && (
+            <p className="text-muted small">
+              Logged in as: <span className="text-dark">{currentUser.email}</span>
+            </p>
+          )}
         </div>
-      </Form>
 
-      <hr className="my-5" />
-
-      {loading && (
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading recipes...</span>
+        <Form onSubmit={handleFindRecipes}>
+          <div className="mb-4">
+            <InputField
+              label="What kind of recipe are you looking for?"
+              placeholder="e.g., How to make Tomato Chicken Marsala?"
+              value={naturalLanguageQuery}
+              onChange={(e) => setNaturalLanguageQuery(e.target.value)}
+            />
           </div>
-        </div>
-      )}
-      {error && <p className="text-center text-danger">Error: {error.message}</p>}
-      {searchResults.length > 0 && (
-        <>
-          <h3 className="mb-4 text-center">Search Results</h3>
-          <RecipeCardList recipes={searchResults} />
-        </>
-      )}
-      {searchResults.length === 0 && !loading && !error && ingredients && (
-        <p className="text-center text-muted">No recipes found for your criteria. Try different inputs.</p>
-      )}
-    </Container>
+
+          <div className="row">
+            <div className="col-md-4 mb-3">
+              <Dropdown
+                label="Dietary Restrictions"
+                options={dietaryOptions}
+                onSelect={setDietaryRestrictions}
+                disabled={true}
+              />
+            </div>
+            <div className="col-md-4 mb-3">
+              <Dropdown
+                label="Cuisine Preferences"
+                options={cuisineOptions}
+                onSelect={setCuisinePreferences}
+                disabled={true}
+              />
+            </div>
+            <div className="col-md-4 mb-3">
+              <Dropdown
+                label="Meal Type"
+                options={mealTypeOptions}
+                onSelect={setMealType}
+                disabled={true}
+              />
+            </div>
+          </div>
+
+          <div className="text-center mt-4">
+            <button type="submit" className="btn btn-primary px-4 py-2">
+              Find Recipes
+            </button>
+          </div>
+        </Form>
+
+        <hr className="my-5" />
+
+        {loading && (
+          <div className="text-center">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading recipes...</span>
+            </div>
+          </div>
+        )}
+
+        {error && <p className="text-center text-danger">Error: {error.message}</p>}
+
+        {searchResults.length > 0 && (
+          <>
+            <h3 className="mb-4 text-center">Relevant Recipes</h3>
+            <RecipeCardList recipes={searchResults} />
+          </>
+        )}
+
+        {!loading && !error && !llmResponse && searchResults.length === 0 && naturalLanguageQuery && (
+          <p className="text-center text-muted">No recipes found for your criteria.</p>
+        )}
+      </Container>
+    </section>
   );
 }
 
