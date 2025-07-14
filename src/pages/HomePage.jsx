@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Container } from 'react-bootstrap';
 import RecipeCardList from '../components/RecipeCardList';
+import HeroBanner from '../components/HeroBanner';
+import Categories from '../components/Categories';
+import NewsletterSignup from '../components/NewsletterSignup';
+import Footer from '../components/Footer';
 import { SPOONACULAR_API_KEY, SPOONACULAR_BASE_URL } from '../spoonacularApi';
 import classicLentilSoup from '../assets/classic-lentil-soup.jpg'; // Placeholder image
 
@@ -13,10 +17,8 @@ function HomePage({ currentUser }) {
     const fetchRandomRecipes = async () => {
       try {
         setLoading(true);
-        // Using "random" recipes for demonstration. In a real app,
-        // you might use "complex search" with no query to get popular recipes.
         const response = await fetch(
-          `${SPOONACULAR_BASE_URL}/recipes/random?number=10&apiKey=${SPOONACULAR_API_KEY}`
+          `${SPOONACULAR_BASE_URL}/recipes/random?number=8&apiKey=${SPOONACULAR_API_KEY}`
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -55,11 +57,26 @@ function HomePage({ currentUser }) {
   }
 
   return (
-    <Container className="my-4">
-      <h2 className="mb-4">Home Recipes</h2>
+    <section class="tstbite-section p-0">
+    <Container>
       {currentUser && <p className="text-muted">Welcome, {currentUser.email}!</p>}
-      <RecipeCardList recipes={recipes} />
+      <HeroBanner />
+
+      <section className="tstbite-components my-4 my-md-5">
+      <h5 className="py-3 mb-0">Super Delicious</h5>
+      </section>     
+
+      <Categories />
     </Container>
+    <NewsletterSignup></NewsletterSignup>
+    <Container>
+      <section className="tstbite-components my-4 my-md-5">
+      <h5 className="py-3 mb-0">Latest Recipes</h5>
+      { <RecipeCardList recipes={recipes} /> }
+      </section>
+    </Container>
+    <Footer></Footer>
+    </section>
   );
 }
 

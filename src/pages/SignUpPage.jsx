@@ -64,7 +64,11 @@ function SignUpPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
-            <Button text={loading ? "Signing Up..." : "Sign Up"} type="submit" disabled={loading} />
+            <div className="d-flex justify-content-center mt-4 mb-1">
+              <button type="submit" disabled={loading} className="custom-button pd">
+                {loading ? "Signing Up..." : "Sign Up"}
+              </button>
+            </div>
           </Form>
           <p className="text-center mt-3">
             Already have an account? <Link to="/login">Log In Here</Link>

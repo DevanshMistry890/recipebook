@@ -62,8 +62,10 @@ function RecipeDetailPage({ currentUser }) {
   }
 
   return (
-    <Container fluid className="my-4 p-4 shadow-sm rounded glass-card d-flex recipe-container">
-      {currentUser && <p className="text-end text-muted small">Logged in as: {currentUser.email}</p>}
+    <Container fluid className="my-4 p-4 shadow-sm rounded glass-card recipe-container">
+      <Row className="text-right">
+        {currentUser && <p className="text-end text-muted small">Logged in as: {currentUser.email}</p>}
+      </Row>      
       <Row className="d-flex recipe-layout">
         <Col md={6} className="left-pane pe-1">
           <Image src={recipeData.imageUrl} alt={recipeData.name} fluid rounded className="mb-3 w-80 h-auto" />
