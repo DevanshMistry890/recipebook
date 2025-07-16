@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import FindRecipePage from './pages/FindRecipePage';
 import SavedRecipesPage from './pages/SavedRecipesPage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
+import RecipeDetailSpoon from './pages/RecipeDetailSpoon';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage'; // New SignUp page
 
@@ -52,6 +53,7 @@ function App() {
         <Route path="/find" element={<FindRecipePage currentUser={currentUser} />} />
         <Route path="/saved" element={<SavedRecipesPage currentUser={currentUser} />} />
         <Route path="/recipe/:id" element={<RecipeDetailPage currentUser={currentUser} />} />
+        <Route path="/spoon/:id" element={<RecipeDetailSpoon currentUser={currentUser} />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} /> {/* New Sign Up Route */}
       </Routes>

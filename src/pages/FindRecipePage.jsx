@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Container, Form } from 'react-bootstrap';
+import { Container, Form, Spinner } from 'react-bootstrap'; // Import Spinner for loading
 import InputField from '../components/InputField';
 import Dropdown from '../components/Dropdown';
-import Button from '../components/Button';
-import RecipeCardList from '../components/RecipeCardList'; // To display search results
+import Button from '../components/Button'; // Assuming you use this for the submit button
+import RecipeCardList from '../components/RecipeCardList';
+import Footer from '../components/Footer';
 
 
 const BACKEND_BASE_URL = 'http://localhost:5000';
@@ -29,19 +30,28 @@ function FindRecipePage({ currentUser }) {
     setLlmResponse(null); // Clear previous LLM response
     setSearchResults([]); // Clear previous search results
 
-    if (!naturalLanguageQuery) {
+    if (!naturalLanguageQuery.trim()) { // Use .trim() to check for empty or just whitespace
       setError(new Error("Please enter a query for the recipe search."));
       setLoading(false);
       return;
     }
 
     try {
+      const requestBody = {
+        query: naturalLanguageQuery,
+        dietaryRestrictions: dietaryRestrictions || null, // Send null if empty string
+        cuisinePreferences: cuisinePreferences || null,   // Send null if empty string
+        mealType: mealType || null,                       // Send null if empty string
+      };
+
+      console.log("Sending request to backend:", requestBody); // For debugging
+
       const response = await fetch(`${BACKEND_BASE_URL}/api/recipes/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: naturalLanguageQuery }),
+        body: JSON.stringify(requestBody), // Send the complete requestBody
       });
 
       if (!response.ok) {
@@ -58,19 +68,26 @@ function FindRecipePage({ currentUser }) {
       // Format retrieved_recipes for RecipeCardList component
       if (data.retrieved_recipes && Array.isArray(data.retrieved_recipes)) {
         const formattedForCardList = data.retrieved_recipes.map(recipe => ({
-          id: recipe._id || recipe.title.replace(/\s+/g, '-').toLowerCase(), // Use _id, fallback to title-based ID
+          id: recipe._id || recipe.title.replace(/\s+/g, '-').toLowerCase() + '-' + Date.now(), // Add Date.now() for uniqueness if _id is missing
           name: recipe.title,
           cookTime: recipe.score ? `${Math.round(recipe.score * 100)}% Match` : 'N/A',
-          imageUrl: recipe.imageUrl, // You'll need logic to get actual images if desired
-          ingredients: recipe.ingredients, // Keep for potential future detail pages
-          instructions: recipe.instructions, // Keep for potential future detail pages
+          imageUrl: recipe.imageUrl, 
+          // Ensure these are passed if RecipeCard (or detail page) expects them:
+          ingredients: recipe.ingredients,
+          instructions: recipe.instructions,
+          // You might want to pass the full recipe object to RecipeCard
+          // if your RecipeCard or the detail page uses it directly for full display.
+          // For now, these specific fields are sufficient for the card display.
         }));
         setSearchResults(formattedForCardList);
+      } else {
+          setSearchResults([]); // Ensure empty array if no recipes are retrieved
       }
 
     } catch (err) {
       setError(err);
       console.error("Failed to fetch recipes from backend:", err);
+      setSearchResults([]); // Clear results on error
     } finally {
       setLoading(false);
     }
@@ -81,85 +98,107 @@ function FindRecipePage({ currentUser }) {
   const mealTypeOptions = ['Main Course', 'Dessert', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Beverage'];
 
   return (
-    <section className="tstbite-components py-5 bg-lightest-gray">
-      <Container className="bg-white p-4 p-md-5 rounded">
-        <div className="text-center mb-4">
-          <h2 className="mb-2 h1">Find Your Recipe</h2>
-          {currentUser && (
-            <p className="text-muted small">
-              Logged in as: <span className="text-dark">{currentUser.email}</span>
-            </p>
+    <>
+      <section className="tstbite-components py-5 bg-lightest-gray">
+        <Container className="bg-white p-4 p-md-5 rounded">
+          <div className="text-center mb-4">
+            <h2 className="mb-2 h1">Find Your Recipe</h2>
+            {currentUser && (
+              <p className="text-muted small">
+                Logged in as: <span className="text-dark">{currentUser.email}</span>
+              </p>
+            )}
+          </div>
+
+          <Form onSubmit={handleFindRecipes}>
+            <div className="mb-4">
+              <InputField
+                label="What kind of recipe are you looking for?"
+                placeholder="e.g., How to make Tomato Chicken Marsala?"
+                value={naturalLanguageQuery}
+                onChange={(e) => setNaturalLanguageQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <Dropdown
+                  label="Dietary Restrictions"
+                  options={dietaryOptions}
+                  onSelect={setDietaryRestrictions}
+                  // Removed disabled={true}
+                />
+              </div>
+              <div className="col-md-4 mb-3">
+                <Dropdown
+                  label="Cuisine Preferences"
+                  options={cuisineOptions}
+                  onSelect={setCuisinePreferences}
+                  // Removed disabled={true}
+                />
+              </div>
+              <div className="col-md-4 mb-3">
+                <Dropdown
+                  label="Meal Type"
+                  options={mealTypeOptions}
+                  onSelect={setMealType}
+                  // Removed disabled={true}
+                />
+              </div>
+            </div>
+
+            <div className="text-center mt-4">
+              <button type="submit" className="btn btn-primary px-4 py-2" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
+                    Searching...
+                  </>
+                ) : (
+                  'Find Recipes'
+                )}
+              </button>
+            </div>
+          </Form>
+
+          <hr className="my-5" />
+
+          {/* Loading indicator */}
+          {loading && (
+            <div className="text-center my-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="text-muted mt-2">Searching for recipes...</p>
+            </div>
           )}
-        </div>
 
-        <Form onSubmit={handleFindRecipes}>
-          <div className="mb-4">
-            <InputField
-              label="What kind of recipe are you looking for?"
-              placeholder="e.g., How to make Tomato Chicken Marsala?"
-              value={naturalLanguageQuery}
-              onChange={(e) => setNaturalLanguageQuery(e.target.value)}
-            />
-          </div>
+          {/* Error message */}
+          {!loading && error && <p className="text-center text-danger">Error: {error.message}</p>}
 
-          <div className="row">
-            <div className="col-md-4 mb-3">
-              <Dropdown
-                label="Dietary Restrictions"
-                options={dietaryOptions}
-                onSelect={setDietaryRestrictions}
-                disabled={true}
-              />
-            </div>
-            <div className="col-md-4 mb-3">
-              <Dropdown
-                label="Cuisine Preferences"
-                options={cuisineOptions}
-                onSelect={setCuisinePreferences}
-                disabled={true}
-              />
-            </div>
-            <div className="col-md-4 mb-3">
-              <Dropdown
-                label="Meal Type"
-                options={mealTypeOptions}
-                onSelect={setMealType}
-                disabled={true}
-              />
-            </div>
-          </div>
 
-          <div className="text-center mt-4">
-            <button type="submit" className="btn btn-primary px-4 py-2">
-              Find Recipes
-            </button>
-          </div>
-        </Form>
+          {/* Search Results Display */}
+          {!loading && !error && searchResults.length > 0 && (
+            <>
+              <h3 className="mb-4 text-center">Relevant Recipes</h3>
+              <RecipeCardList recipes={searchResults} />
+            </>
+          )}
 
-        <hr className="my-5" />
+          {/* No recipes found message (only show if not loading, no error, no results, and a query was made) */}
+          {!loading && !error && searchResults.length === 0 && naturalLanguageQuery.trim() && !llmResponse && (
+            <p className="text-center text-muted">No recipes found for your criteria. Try a different query!</p>
+          )}
 
-        {loading && (
-          <div className="text-center">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading recipes...</span>
-            </div>
-          </div>
-        )}
-
-        {error && <p className="text-center text-danger">Error: {error.message}</p>}
-
-        {searchResults.length > 0 && (
-          <>
-            <h3 className="mb-4 text-center">Relevant Recipes</h3>
-            <RecipeCardList recipes={searchResults} />
-          </>
-        )}
-
-        {!loading && !error && !llmResponse && searchResults.length === 0 && naturalLanguageQuery && (
-          <p className="text-center text-muted">No recipes found for your criteria.</p>
-        )}
-      </Container>
-    </section>
+        </Container>
+      </section>
+      <Footer></Footer>
+    </>
   );
 }
 
