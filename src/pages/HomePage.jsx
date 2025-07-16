@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Container } from 'react-bootstrap';
 import RecipeCardList from '../components/RecipeCardList';
+import RecipeCardListSpoon from '../components/RecipeCardListSpoon';
 import HeroBanner from '../components/HeroBanner';
 import Categories from '../components/Categories';
 import NewsletterSignup from '../components/NewsletterSignup';
 import Footer from '../components/Footer';
 import { SPOONACULAR_API_KEY, SPOONACULAR_BASE_URL } from '../spoonacularApi';
-import classicLentilSoup from '../assets/classic-lentil-soup.jpg'; // Placeholder image
+import classicLentilSoup from '../assets/classic-lentil-soup.jpg';
 
 function HomePage({ currentUser }) {
   const [recipes, setRecipes] = useState([]);
@@ -72,7 +73,7 @@ function HomePage({ currentUser }) {
     <Container>
       <section className="tstbite-components my-4 my-md-5">
       <h5 className="py-3 mb-0">Latest Recipes</h5>
-      { <RecipeCardList recipes={recipes} /> }
+      { <RecipeCardListSpoon recipes={recipes} /> }
       </section>
     </Container>
     <Footer></Footer>
