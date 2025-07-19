@@ -12,41 +12,41 @@ function Footer() {
                 <img src={logo} alt="Recipe Book Logo" height={50} />
               </a>
               <p className="mt-3 text-gray-300 pe-0 pe-lg-5 me-0 me-lg-4">
-                "On the other hand, we denounce with righteous indignation and dislike men who are so beguiled and demoralized by the charms of pleasure of the moment"
+                Discover recipes effortlessly with <strong>Recipe Book</strong> your AI-powered kitchen companion. Whether you’re searching by ingredient or asking naturally, we bring delicious inspiration straight to your screen.
               </p>
             </div>
           </div>
           <div className="col-md-2">
             <h6 className="caption font-weight-medium mb-2 inter-font">
-              Tastebite
+              Recipe Book
             </h6>
-            <ul>
-              <li><a href="#">About us</a></li>
-              <li><a href="#">Careers</a></li>
-              <li><a href="#">Contact us</a></li>
-              <li><a href="#">Feedback</a></li>
+            <ul style={{ marginTop: '20px' }}>
+              <li style={{ marginBottom: '10px' }}><a href="#">About us</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Careers</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Contact us</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Feedback</a></li>
             </ul>
           </div>
           <div className="col-md-2">
             <h6 className="caption font-weight-medium mb-2 inter-font">
               Legal
             </h6>
-            <ul>
-              <li><a href="#">Terms</a></li>
-              <li><a href="#">Conditions</a></li>
-              <li><a href="#">Cookies</a></li>
-              <li><a href="#">Copyright</a></li>
+            <ul style={{ marginTop: '20px' }}>
+              <li style={{ marginBottom: '10px' }}><a href="#">Terms</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Conditions</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Cookies</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Copyright</a></li>
             </ul>
           </div>
           <div className="col-md-2">
             <h6 className="caption font-weight-medium mb-2 inter-font">
               Follow
             </h6>
-            <ul>
-              <li><a href="#">Facebook</a></li>
-              <li><a href="#">Twitter</a></li>
-              <li><a href="#">Instagram</a></li>
-              <li><a href="#">Youtube</a></li>
+            <ul style={{ marginTop: '20px' }}>
+              <li style={{ marginBottom: '10px' }}><a href="#">Facebook</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Twitter</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Instagram</a></li>
+              <li style={{ marginBottom: '10px' }}><a href="#">Youtube</a></li>
             </ul>
           </div>
         </div>

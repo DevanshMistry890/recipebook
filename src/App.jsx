@@ -11,6 +11,7 @@ import RecipeDetailPage from './pages/RecipeDetailPage';
 import RecipeDetailSpoon from './pages/RecipeDetailSpoon';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage'; // New SignUp page
+import MembershipPage from './pages/MembershipPage';
 
 function App() {
   const location = useLocation();
@@ -35,11 +36,11 @@ function App() {
   // Don't render anything until auth state is determined to prevent header flicker
   if (loadingAuth) {
     return (
-        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
         </div>
+      </div>
     );
   }
 
@@ -55,7 +56,9 @@ function App() {
         <Route path="/recipe/:id" element={<RecipeDetailPage currentUser={currentUser} />} />
         <Route path="/spoon/:id" element={<RecipeDetailSpoon currentUser={currentUser} />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} /> {/* New Sign Up Route */}
+        <Route path="/signup" element={<SignUpPage />} /> 
+        <Route path="/membership" element={<MembershipPage currentUser={currentUser} />}
+        />
       </Routes>
     </div>
   );

@@ -59,6 +59,12 @@ function Header({ activeTab, currentUser }) {
               >
                 Saved
               </Nav.Link>
+              <Nav.Link
+                as={Link}
+                to="/membership"
+                className={`tstbite-nav-link ${activeTab === 'Membership' ? 'active' : ''}`}>
+                Membership
+                </Nav.Link>
             </Nav>
 
             <Nav className="ms-auto align-items-center">
