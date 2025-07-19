@@ -30,8 +30,21 @@ function FindRecipePage({ currentUser }) {
     setLlmResponse(null); // Clear previous LLM response
     setSearchResults([]); // Clear previous search results
 
-    if (!naturalLanguageQuery.trim()) { // Use .trim() to check for empty or just whitespace
-      setError(new Error("Please enter a query for the recipe search."));
+    if (!naturalLanguageQuery.trim() ||
+      naturalLanguageQuery.length < 5) {
+      setError(new Error("Please enter a meaningful recipe query."));
+      setLoading(false);
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(naturalLanguageQuery)) {
+      setError(new Error("Query must include at least one alphabet character."));
+      setLoading(false);
+      return;
+    }
+
+    if (naturalLanguageQuery.length > 500) {
+      setError(new Error("Query must be 500 characters or less."));
       setLoading(false);
       return;
     }
@@ -71,7 +84,7 @@ function FindRecipePage({ currentUser }) {
           id: recipe._id || recipe.title.replace(/\s+/g, '-').toLowerCase() + '-' + Date.now(), // Add Date.now() for uniqueness if _id is missing
           name: recipe.title,
           cookTime: recipe.score ? `${Math.round(recipe.score * 100)}% Match` : 'N/A',
-          imageUrl: recipe.imageUrl, 
+          imageUrl: recipe.imageUrl,
           // Ensure these are passed if RecipeCard (or detail page) expects them:
           ingredients: recipe.ingredients,
           instructions: recipe.instructions,
@@ -81,7 +94,7 @@ function FindRecipePage({ currentUser }) {
         }));
         setSearchResults(formattedForCardList);
       } else {
-          setSearchResults([]); // Ensure empty array if no recipes are retrieved
+        setSearchResults([]); // Ensure empty array if no recipes are retrieved
       }
 
     } catch (err) {
@@ -117,7 +130,20 @@ function FindRecipePage({ currentUser }) {
                 placeholder="e.g., How to make Tomato Chicken Marsala?"
                 value={naturalLanguageQuery}
                 onChange={(e) => setNaturalLanguageQuery(e.target.value)}
+                maxLength={500}
               />
+              <div className="text-end">
+                <small
+                  className={
+                    naturalLanguageQuery.length > 500
+                      ? 'text-danger'
+                      : 'text-muted'
+                  }
+                >
+                  {naturalLanguageQuery.length}/500 characters
+                  {naturalLanguageQuery.length > 500 && ' (Too long)'}
+                </small>
+              </div>
             </div>
 
             <div className="row">
@@ -126,7 +152,7 @@ function FindRecipePage({ currentUser }) {
                   label="Dietary Restrictions"
                   options={dietaryOptions}
                   onSelect={setDietaryRestrictions}
-                  // Removed disabled={true}
+                // Removed disabled={true}
                 />
               </div>
               <div className="col-md-4 mb-3">
@@ -134,7 +160,7 @@ function FindRecipePage({ currentUser }) {
                   label="Cuisine Preferences"
                   options={cuisineOptions}
                   onSelect={setCuisinePreferences}
-                  // Removed disabled={true}
+                // Removed disabled={true}
                 />
               </div>
               <div className="col-md-4 mb-3">
@@ -142,7 +168,7 @@ function FindRecipePage({ currentUser }) {
                   label="Meal Type"
                   options={mealTypeOptions}
                   onSelect={setMealType}
-                  // Removed disabled={true}
+                // Removed disabled={true}
                 />
               </div>
             </div>

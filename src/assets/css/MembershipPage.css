@@ -1,0 +1,91 @@
+/* Custom CSS for MembershipPage */
+
+
+.membership-container {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+
+.premium-card {
+    border: 3px solid #FF4F14 !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 123, 255, 0.25) !important;
+    transform: translateY(-10px);
+    transition: all 0.3s ease-in-out;
+}
+
+.premium-card:hover {
+    transform: translateY(-15px) scale(1.02);
+    box-shadow: 0 1rem 2rem rgba(255, 140, 0, 0.35) !important;
+}
+
+.premium-card .card-header {
+    background-color: #FF4F14 !important;
+    color: white !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+    border-bottom: none !important;
+}
+
+.premium-card .card-header .h3 {
+    font-size: 2.5rem !important;
+    font-weight: 700 !important;
+}
+
+.premium-card .card-body {
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    height: 100%; 
+}
+
+.premium-card .list-group-item {
+    background-color: none !important;
+    border: none !important;
+    padding-left: 2% !important;
+}
+
+.premium-card .list-group-item:last-child {
+    border-bottom: none !important;
+}
+
+
+.premium-card .btn-primary {
+    background-color: #0070ba !important;
+    border-color: #025f9d !important;
+    color: white !important;
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+    margin-top: 1.5rem !important;
+    transition: all 0.2s ease-in-out;
+}
+
+.premium-card .btn-primary:hover {
+    background-color: #005c99 !important;
+    border-color: #005c99 !important;
+    transform: translateY(-2px);
+}
+
+.free-card {
+    border: 1px solid #dee2e6;
+}
+
+.free-card .card-header {
+    color: #343a40 !important;
+}
+
+.price-list .list-group-item {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    border: none !important;
+}
+
+
+.text-success .fa-check-circle {
+    color: #28a745;
+}
+
+.text-danger .fa-times-circle {
+    color: #dc3545;
+}

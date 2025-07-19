@@ -25,11 +25,11 @@ function Categories() {
         {categories.map((cat, index) => (
           <div key={index} className="col-lg-2 col-md-4 col-4">
             <figure className="my-3 text-center tstbite-card">
-              <a href="/category" className="tstbite-animation stretched-link rounded-circle">
+              <a href="#" className="tstbite-animation stretched-link rounded-circle">
                 <img src={cat.image} className="rounded-circle w-100" alt={cat.title} />
               </a>
               <figcaption className="mt-2">
-                <a href="/category" className="tstbite-category-title">{cat.title}</a>
+                <a href="#" className="tstbite-category-title">{cat.title}</a>
               </figcaption>
             </figure>
           </div>

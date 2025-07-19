@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container } from 'react-bootstrap';
 import RecipeCardList from '../components/RecipeCardList';
 import RecipeCardListSpoon from '../components/RecipeCardListSpoon';
+import RecipeCardListSpoon2 from '../components/RecipeCardListSpoon2';
 import HeroBanner from '../components/HeroBanner';
 import Categories from '../components/Categories';
 import NewsletterSignup from '../components/NewsletterSignup';
@@ -58,13 +59,14 @@ function HomePage({ currentUser }) {
   }
 
   return (
-    <section class="tstbite-section p-0">
+    <section className="tstbite-section p-0">
     <Container>
-      {currentUser && <p className="text-muted">Welcome, {currentUser.email}!</p>}
+      {currentUser && <p className="ms-3 text-muted">Welcome, {currentUser.email.split('@')[0]} !</p>}
       <HeroBanner />
 
       <section className="tstbite-components my-4 my-md-5">
       <h5 className="py-3 mb-0">Super Delicious</h5>
+        { <RecipeCardListSpoon2 recipes={recipes} /> }
       </section>     
 
       <Categories />
