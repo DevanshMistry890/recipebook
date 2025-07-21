@@ -9,7 +9,7 @@ import { ref, onValue, off } from 'firebase/database';
 
 // Import your API keys and base URLs
 import { SPOONACULAR_API_KEY, SPOONACULAR_BASE_URL } from '../spoonacularApi';
-const BACKEND_BASE_URL = 'http://localhost:5000'; // Your backend URL
+const BACKEND_BASE_URL = 'https://recipebkend-production.up.railway.app'; // Your backend URL
 
 function SavedRecipesPage({ currentUser }) {
   const [backendSavedRecipes, setBackendSavedRecipes] = useState([]);

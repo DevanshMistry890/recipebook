@@ -7,7 +7,7 @@ import RecipeCardList from '../components/RecipeCardList';
 import Footer from '../components/Footer';
 
 
-const BACKEND_BASE_URL = 'http://localhost:5000';
+const BACKEND_BASE_URL = 'https://recipebkend-production.up.railway.app';
 
 
 function FindRecipePage({ currentUser }) {
