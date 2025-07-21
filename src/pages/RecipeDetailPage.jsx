@@ -23,7 +23,7 @@ function getRandomFallbackImageUrl() {
   return FALLBACK_IMAGE_URLS[randomIndex];
 }
 
-const BACKEND_BASE_URL = 'http://localhost:5000';
+const BACKEND_BASE_URL = 'https://recipebkend-production.up.railway.app';
 
 function RecipeDetailPage({ currentUser }) {
   const { id } = useParams();
