@@ -209,10 +209,15 @@ function FindRecipePage({ currentUser }) {
 
 
           {/* Search Results Display */}
-          {!loading && !error && searchResults.length > 0 && (
+          {!loading && !error && (
             <>
-              <h3 className="mb-4 text-center">Relevant Recipes</h3>
-              <RecipeCardList recipes={searchResults} />
+              {searchResults.length > 0 ? (
+                // Display RecipeCardList if recipes are found
+                <RecipeCardList recipes={searchResults} currentUser={currentUser} />
+              ) : (
+                // Display LLM response if no recipes were found
+                llmResponse && <p className="llm-message text-center text-muted">No recipes found for your criteria. Try a different query!</p>
+              )}
             </>
           )}
 
