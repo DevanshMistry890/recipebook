@@ -2,7 +2,7 @@
 
 A responsive and feature-rich web application built with React.js, allowing users to discover, search, and manage recipes based on their preferences. The app integrates Firebase Authentication and fetches real-time data from the Spoonacular API.
 
-🔗 Live Demo: [https://devanshmistry890.github.io/recipebook/](https://devanshmistry890.github.io/recipebook/)
+🔗 Live Demo: [https://www.airecipebook.me](https://www.airecipebook.me/)
 
 ---
 
@@ -27,7 +27,7 @@ A responsive and feature-rich web application built with React.js, allowing user
 | UI Layout | React-Bootstrap (structure only)            |
 | Styling   | Custom CSS (no Bootstrap theme)             |
 | Auth      | Firebase Authentication                     |
-| API       | Spoonacular API                             |
+| API       | Spoonacular API + Personal API              |
 | Icons     | Font Awesome                                |
 
 ---
