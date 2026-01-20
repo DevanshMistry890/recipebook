@@ -59,7 +59,7 @@ graph TD
 
     subgraph "Generative Engine (Web Worker)"
         UI -->|Click 'Analyze'| Worker[LLM Worker]
-        Worker -->|Raw Text| Phi3[Phi-3 Model (WebGPU)]
+        Worker -->|Raw Text| Phi3["Phi-3 Model (WebGPU)"]
         Phi3 -->|JSON Structure| UI
     end
 
