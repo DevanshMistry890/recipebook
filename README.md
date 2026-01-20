@@ -95,8 +95,8 @@ You can run the full AI stack locally.
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-username/ai-recipe-book.git
-cd ai-recipe-book
+git clone https://github.com/DevanshMistry890/recipebook.git
+cd recipebook
 npm install
 
 ```
