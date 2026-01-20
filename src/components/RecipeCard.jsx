@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Card } from 'react-bootstrap';
-
+// We removed Link because we are using the parent's onClick for navigation now
 
 import fallback1 from '../assets/fallbacks/fallback.webp';
 import fallback2 from '../assets/fallbacks/fallback2.webp';
@@ -22,41 +20,63 @@ function getRandomFallbackImageUrl() {
   return FALLBACK_IMAGE_URLS[randomIndex];
 }
 
-function RecipeCard({ recipeName, cookTime, imageUrl, id }) {
+function RecipeCard({ recipe, onClick }) {
+  // Destructure the new data fields
+  const { id, name, cookTime, imageUrl, ingredients } = recipe;
+
+  // --- OLD CODE: Fallback Logic ---
   const [currentImageSrc, setCurrentImageSrc] = useState(imageUrl || getRandomFallbackImageUrl());
   const hasFallbackAttempted = useRef(false);
+
   useEffect(() => {
     setCurrentImageSrc(imageUrl || getRandomFallbackImageUrl());
-    hasFallbackAttempted.current = false; // Reset for a new image prop
+    hasFallbackAttempted.current = false;
   }, [imageUrl, id]);
 
   const handleImageError = () => {
-    // Only attempt to set a fallback if we haven't tried one already for this image
     if (!hasFallbackAttempted.current) {
-      setCurrentImageSrc(getRandomFallbackImageUrl()); // Set a new random fallback
+      setCurrentImageSrc(getRandomFallbackImageUrl());
       hasFallbackAttempted.current = true;
     } else {
-      console.warn(`Fallback image also failed to load for recipe: ${recipeName} (ID: ${id})`);
+      console.warn(`Fallback image also failed for recipe: ${name} (ID: ${id})`);
     }
   };
 
-
+  // --- OLD CODE: Layout (figure/figcaption) ---
   return (
     <figure className="my-3 my-md-4 tstbite-card">
-      <Link to={`/recipe/${id}`} className="tstbite-animation stretched-link rounded-6 d-block">
+      <a
+        onClick={onClick}
+        className="tstbite-animation stretched-link rounded-6 d-block"
+        style={{ cursor: 'pointer' }}
+      >
         <img
           src={currentImageSrc}
-          alt={recipeName}
+          alt={name}
           onError={handleImageError}
           className="w-100"
           style={{ height: '180px', objectFit: 'cover' }}
         />
-      </Link>
+      </a>
+
       <figcaption className="mt-2 text-center">
-        <Link to={`/recipe/${id}`} className="text-black d-block mt-1 font-weight-semibold big">
-          {recipeName}
-        </Link>
-        {cookTime && <span className="text-muted small d-block">{cookTime}</span>}
+        <a
+          onClick={onClick}
+          className="text-black d-block mt-1 font-weight-semibold big"
+          style={{ cursor: 'pointer' }}
+        >
+          {name}
+        </a>
+
+        {cookTime && <span className="badge bg-success bg-opacity-75 me-2">{cookTime}</span>}
+
+        {/* --- NEW DATA: Ingredients (fitted into old layout) --- */}
+        <div className="text-muted small mt-1" style={{ fontSize: '0.85em' }}>
+          {Array.isArray(ingredients)
+            ? ingredients.slice(0, 3).join(', ') + (ingredients.length > 3 ? '...' : '')
+            : ''}
+        </div>
+
       </figcaption>
     </figure>
   );

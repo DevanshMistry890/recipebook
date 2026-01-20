@@ -1,23 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useLocation } from 'react-router-dom'; // Keep useLocation for now, though it's less critical if only backend.
-import { Container, Row, Col, Image } from 'react-bootstrap';
-
+import { useParams, useLocation } from 'react-router-dom';
+import { Container, Button, Spinner } from 'react-bootstrap';
+import { useEdgeLLM } from '../hooks/useEdgeLLM'; // Re-imported
 
 import NewsletterBox from '../components/NewsletterBox';
 import Footer from '../components/Footer';
-import '../assets/css/extra.css';
+import '../assets/css/extra.css'; // Ensure this has blur class
 import SaveRecipeButton from '../components/SaveRecipeButton.jsx';
 
-
 import fallback1 from '../assets/fallbacks/fallback.webp';
-
-
 
 const FALLBACK_IMAGE_URLS = [
   fallback1,
 ];
 
-// Function to get a random fallback image URL
 function getRandomFallbackImageUrl() {
   const randomIndex = Math.floor(Math.random() * FALLBACK_IMAGE_URLS.length);
   return FALLBACK_IMAGE_URLS[randomIndex];
@@ -28,11 +24,17 @@ const BACKEND_BASE_URL = 'https://recipebkend-production.up.railway.app';
 function RecipeDetailPage({ currentUser }) {
   const { id } = useParams();
   const location = useLocation();
+
   const [recipeData, setRecipeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const recipeType = 'recipe';
 
+  // Lazy AI State
+  const [isMissingStats, setIsMissingStats] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { init, isReady, askRecipe, response } = useEdgeLLM();
+
+  const recipeType = 'recipe';
   const [currentDisplayImageSrc, setCurrentDisplayImageSrc] = useState(null);
   const hasFallbackAttempted = useRef(false);
 
@@ -47,6 +49,41 @@ function RecipeDetailPage({ currentUser }) {
 
   useEffect(() => {
     const fetchRecipeDetails = async () => {
+      const stateRecipe = location.state?.recipe;
+
+      if (stateRecipe) {
+        console.log("Using recipe data from state:", stateRecipe);
+        const stats = stateRecipe.stats || {};
+
+        // CHECK: Do we have stats?
+        const hasStats = Boolean(stats.time || stats.cal);
+        setIsMissingStats(!hasStats);
+
+        setRecipeData({
+          id: stateRecipe.id || stateRecipe.i,
+          name: stateRecipe.name || stateRecipe.t,
+          imageUrl: stateRecipe.imageUrl || stateRecipe.img,
+          // Map existing or default to null
+          cookTime: stats.time ? `${stats.time} min` : null,
+          serves: '2-4 Persons',
+          ingredients: stateRecipe.ingredients || stateRecipe.ing || [],
+          instructions: stateRecipe.instructions || stateRecipe.ins || [],
+          nutrition: hasStats ? {
+            calories: stats.cal,
+            totalFat: stats.fat,
+            saturatedFat: 0,
+            carbohydrates: stats.carbs,
+            sugar: 0,
+            protein: stats.prot
+          } : null // Null nutrition triggers "Generate" view
+        });
+
+        setCurrentDisplayImageSrc(stateRecipe.imageUrl || stateRecipe.img || getRandomFallbackImageUrl());
+        setLoading(false);
+        return;
+      }
+
+      // Fallback Backend Fetch
       try {
         setLoading(true);
         setError(null);
@@ -54,56 +91,106 @@ function RecipeDetailPage({ currentUser }) {
         hasFallbackAttempted.current = false;
 
         console.log(`Fetching recipe details from backend for ID: ${id}`);
+        // ... (Keep existing fetch logic)
         const response = await fetch(`${BACKEND_BASE_URL}/api/recipes/${id}`);
-
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `Backend HTTP error! status: ${response.status}`);
         }
-
         const fetchedData = await response.json();
-        console.log('Fetched data from backend:', fetchedData);
 
-        // Destructure directly from fetchedData
-        const {
-          id: recipeIdFromBackend,
-          title,
-          imageUrl,
-          prepTimeMinutes,
-          servings,
-          ingredients,
-          instructions,
-          nutrition
-        } = fetchedData;
-
-        // Map backend data to consistent structure
         setRecipeData({
-          id: recipeIdFromBackend || id,
-          name: title || 'Recipe Name',
-          imageUrl: imageUrl,
-          cookTime: prepTimeMinutes ? `${prepTimeMinutes} min` : 'N/A',
-          serves: servings ? `${servings} Persons` : 'N/A',
-          ingredients: Array.isArray(ingredients) ? ingredients : [],
-          instructions: Array.isArray(instructions) ? instructions : [],
-          nutrition: nutrition?.perServing || null
+          id: fetchedData.id,
+          name: fetchedData.title,
+          imageUrl: fetchedData.imageUrl,
+          cookTime: fetchedData.prepTimeMinutes ? `${fetchedData.prepTimeMinutes} min` : null,
+          serves: fetchedData.servings ? `${fetchedData.servings} Persons` : null,
+          ingredients: fetchedData.ingredients || [],
+          instructions: fetchedData.instructions || [],
+          nutrition: fetchedData.nutrition?.perServing || null
         });
 
-        // Set the image source after fetching successfully
-        setCurrentDisplayImageSrc(imageUrl || getRandomFallbackImageUrl());
+        setIsMissingStats(!fetchedData.nutrition?.perServing);
+        setCurrentDisplayImageSrc(fetchedData.imageUrl || getRandomFallbackImageUrl());
 
       } catch (err) {
         setError(err);
-        console.error("Failed to fetch recipe details:", err);
-        setCurrentDisplayImageSrc(getRandomFallbackImageUrl()); // Set a random fallback on fetch error
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchRecipeDetails();
+    fetchRecipeDetails();
+  }, [id, location.state]);
+
+  // --- HANDLER: Generate AI Stats ---
+  const handleGenerateAI = async () => {
+    if (!isReady) {
+      await init();
     }
-  }, [id]); // Only depend on 'id' now, as 'location.search' is no longer critical for source detection
+    setIsGenerating(true);
+
+    const raw = location.state?.recipe || recipeData;
+    const llmInput = {
+      t: raw.name || raw.t,
+      i: (raw.ingredients || raw.ing || []).slice(0, 50)
+    };
+
+    // IMPROVED PROMPT: Ask for cleaned text as well
+    const prompt = `
+            Task: Estimate nutrition & Format text.
+            Recipe: ${JSON.stringify(llmInput)}
+            Return strictly JSON: 
+            { 
+              "time": number, 
+              "serves": number,
+              "ingredients": ["cleaned ingredient 1", "cleaned ingredient 2"],
+              "instructions": ["Step 1", "Step 2"],
+              "nutrition": { "calories": number, "fat": number, "carbs": number, "protein": number } 
+            }
+      `;
+
+    await askRecipe(raw, prompt);
+  };
+
+  // --- EFFECT: Handle AI Response ---
+  useEffect(() => {
+    if (response && isGenerating) {
+      try {
+        const cleanJson = response.replace(/```json|```/g, '').trim();
+        const jsonMatch = cleanJson.match(/\{[\s\S]*\}/);
+
+        if (jsonMatch) {
+          const structured = JSON.parse(jsonMatch[0]);
+
+          // Update State Live
+          setRecipeData(prev => ({
+            ...prev,
+            cookTime: structured.time ? `${structured.time} min` : prev.cookTime,
+            serves: structured.serves ? `${structured.serves} Persons` : prev.serves,
+            // Auto-update text with formatted versions if returned
+            ingredients: structured.ingredients && structured.ingredients.length > 0 ? structured.ingredients : prev.ingredients,
+            instructions: structured.instructions && structured.instructions.length > 0 ? structured.instructions : prev.instructions,
+
+            nutrition: structured.nutrition ? {
+              calories: structured.nutrition.calories,
+              totalFat: structured.nutrition.fat,
+              saturatedFat: 0,
+              carbohydrates: structured.nutrition.carbs,
+              sugar: 0,
+              protein: structured.nutrition.protein
+            } : prev.nutrition
+          }));
+
+          if (structured.nutrition) {
+            setIsGenerating(false);
+            setIsMissingStats(false); // Done!
+          }
+        }
+      } catch (e) { /* Ignore partial parse errors */ }
+    }
+  }, [response, isGenerating]);
+
 
   if (loading) {
     return (
@@ -116,21 +203,16 @@ function RecipeDetailPage({ currentUser }) {
     );
   }
 
-  if (error) {
-    return <Container className="my-4 text-center text-danger">Error: {error.message}</Container>;
-  }
-
-  if (!recipeData) {
-    return <Container className="my-4">Recipe not found.</Container>;
-  }
+  if (error) return <Container className="my-5 text-center text-danger">Error: {error.message}</Container>;
+  if (!recipeData) return <Container className="my-5">Recipe not found</Container>;
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      alert('Recipe link copied to clipboard!'); // Simple popup notification
+      alert('Recipe link copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy URL to clipboard:', err);
-      alert('Failed to copy link. Please try again.'); // Error notification
+      alert('Failed to copy link. Please try again.');
     }
   };
 
@@ -138,6 +220,7 @@ function RecipeDetailPage({ currentUser }) {
     <>
       <div className="container">
         <section className="tstbite-components my-4 my-md-5">
+          {/* Header Section (Image, Title, Share) */}
           <div className="d-sm-flex">
             <div className="tstbite-svg order-sm-2 ms-auto">
               <div className="tstbite-feature pt-0">
@@ -154,43 +237,27 @@ function RecipeDetailPage({ currentUser }) {
                 <rect data-name="Bounding Box" width="20" height="20" fill="rgba(255,255,255,0)"></rect>
                 <path d="M.244,11.423a.834.834,0,0,1,0-1.178L6.494,3.994a.834.834,0,0,1,1.178,0L11.25,7.571l5.9-5.9H14.167a.833.833,0,1,1,0-1.667h5A.833.833,0,0,1,20,.833v5a.834.834,0,0,1-1.667,0V2.845L11.839,9.339a.834.834,0,0,1-1.179,0L7.083,5.761l-5.66,5.661a.834.834,0,0,1-1.179,0Z" transform="translate(0 4.167)" fill="#ff642f"></path>
               </svg>
-              <span className="ms-2 caption font-weight-medium">85% would make this again</span>
-            </strong>
+              <span className="ms-2 caption font-weight-medium">85% would make this again</span></strong>
             <h5 className="py-3 mb-0 h2">{recipeData.name}</h5>
           </div>
+
           <div className="blog-detail">
-            <hr></hr>
+            <hr />
             <div className="rounded-12 overflow-hidden position-relative tstbite-svg">
-              <img
-                src={currentDisplayImageSrc}
-                // --- FIX: Use currentDisplayImageSrc dynamically in srcset ---
-                srcSet={`
-                  ${currentDisplayImageSrc}?w=320 320w,
-                  ${currentDisplayImageSrc}?w=640 640w,
-                  ${currentDisplayImageSrc}?w=1280 1280w
-                `}
-                sizes="(max-width: 576px) 320px, (max-width: 992px) 640px, 1280px"
-                alt={recipeData.name}
-                className="mb-3 w-100 img-fluid rounded"
-                loading="lazy"
-                onError={handleDetailImageError}
-                style={{ aspectRatio: '16/9', objectFit: 'cover' }}
-              />
+              <img src={currentDisplayImageSrc} alt={recipeData.name} className="mb-3 w-100 img-fluid rounded" style={{ aspectRatio: '16/9', objectFit: 'cover' }} onError={handleDetailImageError} />
             </div>
-            <br></br>
+
             <div className="row mt-0 mt-md-5">
               <div className="col-lg-8 col-md-7">
                 <div className="border-md-end pe-0 pe-lg-5">
                   <ul className="list-unstyled component-list tstbite-svg">
                     <li>
                       <small>Prep Time</small>
-                      {/* --- FIX: Use dynamic cookTime from recipeData --- */}
-                      <span>{recipeData.cookTime}</span>
+                      <span>{recipeData.cookTime || (isGenerating ? <Spinner size="sm" animation="border" /> : '?')}</span>
                     </li>
                     <li>
                       <small>Servings</small>
-                      {/* --- FIX: Use dynamic serves from recipeData --- */}
-                      <span>{recipeData.serves}</span>
+                      <span>{recipeData.serves || '?'}</span>
                     </li>
                     <li>
                       <a href="#" onClick={() => window.print()} title="Print Recipe">
@@ -200,93 +267,73 @@ function RecipeDetailPage({ currentUser }) {
                         </svg>
                       </a>
                     </li>
-                    <SaveRecipeButton
-                      currentUser={currentUser}
-                      recipeId={recipeData.id}
-                      recipeType={recipeType}
-                    />
+                    <SaveRecipeButton currentUser={currentUser} recipeId={recipeData.id} recipeType={recipeType} />
                   </ul>
 
-
+                  {/* Ingredients & Instructions */}
                   <div className="mt-4 mt-md-5">
-                    <h6>Ingredients</h6>
+                    <h6>Ingredients {isGenerating && <span className="badge bg-primary ms-2"><Spinner size="md" animation="grow" /> Updating...</span>}</h6>
                     <div className="checklist pb-2">
-                      {recipeData.ingredients.length > 0 ? (
-                        <div className="list-unstyled">
-                          {recipeData.ingredients.map((ingredient, index) => (
-                            <div key={index} className="form-check form-check-rounded recipe-checkbox">
-                              <input
-                                type="checkbox"
-                                id={`ingredient-${index}`}
-                                name={`ingredient-${index}`}
-                                className="form-check-input"
-                              />
-                              <label className="form-check-label" htmlFor={`ingredient-${index}`}>
-                                {ingredient}
-                              </label>
-                            </div>
-                          ))}
+                      {recipeData.ingredients.map((ing, i) => (
+                        <div key={i} className="form-check form-check-rounded recipe-checkbox">
+                          <input type="checkbox" id={`ing-${i}`} className="form-check-input" />
+                          <label className="form-check-label" htmlFor={`ing-${i}`}>{ing}</label>
                         </div>
-                      ) : (
-                        <p className="text-muted">No ingredients listed.</p>
-                      )}
+                      ))}
                     </div>
                   </div>
 
                   <div className="mt-3 mt-md-5">
-                    <h6>Instructions</h6>
-                    {recipeData.instructions.length > 0 ? (
-                      <ul className="instruction-list list-unstyled">
-                        {recipeData.instructions.map((instruction, index) => (
-                          <li key={index}><span>{index + 1}</span> {instruction}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-muted">No instructions listed.</p>
-                    )}
+                    <h6>Instructions {isGenerating && <span className="badge bg-primary ms-2"><Spinner size="md" animation="grow" /> Updating...</span>}</h6>
+                    <ul className="instruction-list list-unstyled">
+                      {recipeData.instructions.map((ins, i) => <li key={i}><span>{i + 1}</span> {ins}</li>)}
+                    </ul>
                   </div>
                 </div>
               </div>
+
+              {/* Right Column: Nutrition */}
               <div className="col-lg-4 col-md-5">
-                {recipeData.nutrition && (
-                  <div className="rounded-12 bg-lightest-gray p-4">
-                    <h6>Nutrition Facts</h6>
-                    <ul className="Nutrition-list list-unstyled">
-                      <li>
-                        <span>Calories</span>
-                        <span>{recipeData.nutrition.calories} kcal</span>
-                      </li>
-                      <li>
-                        <span>Total Fat</span>
-                        <span>{recipeData.nutrition.totalFat} g</span>
-                      </li>
-                      <li>
-                        <span>Saturated Fat</span>
-                        <span>{recipeData.nutrition.saturatedFat} g</span>
-                      </li>
-                      <li>
-                        <span>Total Carbohydrate</span>
-                        <span>{recipeData.nutrition.carbohydrates} g</span>
-                      </li>
-                      <li>
-                        <span>Sugars</span>
-                        <span>{recipeData.nutrition.sugar} g</span>
-                      </li>
-                      <li>
-                        <span>Protein</span>
-                        <span>{recipeData.nutrition.protein} g</span>
-                      </li>
-                    </ul>
+                {/* LAZY AI LOGIC HERE */}
+                {isMissingStats && !recipeData.nutrition ? (
+                  <div className="rounded-12 bg-lightest-gray p-4 text-center" style={{ position: 'relative', overflow: 'hidden' }}>
+                    {/* Blurred Content Background */}
+                    <div style={{ filter: 'blur(5px)', opacity: 0.5 }}>
+                      <h6>Nutrition Facts</h6>
+                      <ul className="Nutrition-list list-unstyled">
+                        <li><span>Calories</span><span>---</span></li>
+                        <li><span>Total Fat</span><span>---</span></li>
+                        <li><span>Protein</span><span>---</span></li>
+                      </ul>
+                    </div>
+
+                    {/* Overlay Button */}
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%' }}>
+                      <Button variant="primary" onClick={handleGenerateAI} disabled={isGenerating}>
+                        {isGenerating ? <><Spinner as="span" animation="border" size="sm" className="me-2" /> Chef AI is Analyzing...</> : "✨ Analyze with AI Chef"}
+                      </Button>
+                    </div>
                   </div>
+                ) : (
+                  recipeData.nutrition && (
+                    <div className="rounded-12 bg-lightest-gray p-4">
+                      <h6>Nutrition Facts</h6>
+                      <ul className="Nutrition-list list-unstyled">
+                        <li><span>Calories</span><span>{recipeData.nutrition.calories} kcal</span></li>
+                        <li><span>Total Fat</span><span>{recipeData.nutrition.totalFat} g</span></li>
+                        <li><span>Carbohydrate</span><span>{recipeData.nutrition.carbohydrates} g</span></li>
+                        <li><span>Protein</span><span>{recipeData.nutrition.protein} g</span></li>
+                      </ul>
+                    </div>
+                  )
                 )}
                 <NewsletterBox />
               </div>
             </div>
-            <hr className="orange hr-11"></hr>
           </div>
         </section>
       </div>
-      <Footer></Footer>
+      <Footer />
     </>
   );
 }

@@ -1,11 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
+import { Navbar, Nav, Container, NavDropdown, Button, Spinner, Badge } from 'react-bootstrap';
+import { useEdgeLLM } from '../hooks/useEdgeLLM';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import Logo from '../assets/logo.png';
 
 function Header({ activeTab, currentUser }) {
   const navigate = useNavigate();
+  const { init, isReady, status, progress } = useEdgeLLM();
 
   const handleLogout = async () => {
     try {
@@ -64,10 +66,37 @@ function Header({ activeTab, currentUser }) {
                 to="/membership"
                 className={`tstbite-nav-link ${activeTab === 'Membership' ? 'active' : ''}`}>
                 Membership
-                </Nav.Link>
+              </Nav.Link>
             </Nav>
 
-            <Nav className="ms-auto align-items-center">
+            <Nav className="ms-auto align-items-center gap-3">
+              {/* AI Chef Control */}
+              <div className="d-flex align-items-center">
+                {!isReady ? (
+                  <Button
+                    variant={progress > 0 ? "outline-warning" : "outline-primary"}
+                    size="sm"
+                    onClick={init}
+                    disabled={progress > 0}
+                    className="d-flex align-items-center gap-2"
+                  >
+                    {progress > 0 ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                        {progress}%
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-robot"></i> Activate AI Chef
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Badge bg="success" className="d-flex align-items-center gap-1 py-2 px-3">
+                    <i className="fa-solid fa-check-circle"></i> AI Ready
+                  </Badge>
+                )}
+              </div>
               {currentUser ? (
                 <NavDropdown
                   title={currentUser.email || 'User'}

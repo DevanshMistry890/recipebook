@@ -1,109 +1,126 @@
-import React, { useState } from 'react';
-import { Container, Form, Spinner } from 'react-bootstrap'; // Import Spinner for loading
+import { useState, useRef, useEffect } from 'react';
+import { Container, Form, Spinner } from 'react-bootstrap'; 
 import InputField from '../components/InputField';
 import Dropdown from '../components/Dropdown';
-import Button from '../components/Button'; // Assuming you use this for the submit button
 import RecipeCardList from '../components/RecipeCardList';
 import Footer from '../components/Footer';
 
 
-const BACKEND_BASE_URL = 'https://recipebkend-production.up.railway.app';
+import { useEdgeSearch } from '../hooks/useEdgeSearch';
+import { useEdgeLLM } from '../hooks/useEdgeLLM';
+import fallback1 from '../assets/fallbacks/fallback.webp';
+
+const FALLBACK_IMAGE_URLS = [fallback1];
+function getRandomFallbackImageUrl() {
+  const randomIndex = Math.floor(Math.random() * FALLBACK_IMAGE_URLS.length);
+  return FALLBACK_IMAGE_URLS[randomIndex];
+}
 
 
 function FindRecipePage({ currentUser }) {
+  const { search, isReady: searchReady, isLoading: edgeLoading, status: searchStatus } = useEdgeSearch();
+  const { askRecipe, isReady: llmReady, response: llmStreamResponse } = useEdgeLLM();
+
   const [naturalLanguageQuery, setNaturalLanguageQuery] = useState('');
   const [dietaryRestrictions, setDietaryRestrictions] = useState('');
   const [cuisinePreferences, setCuisinePreferences] = useState('');
   const [mealType, setMealType] = useState('');
 
-  // State variables for the LLM's response and formatted recipes for cards
-  const [llmResponse, setLlmResponse] = useState(null);
-  const [searchResults, setSearchResults] = useState([]); // Formatted data for RecipeCardList
-
+  // State
+  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Searching...");
   const [error, setError] = useState(null);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Buffer for LLM response
+  const responseBuffer = useRef("");
+
+  useEffect(() => {
+    if (llmStreamResponse && isFiltering) {
+      responseBuffer.current = llmStreamResponse;
+    }
+  }, [llmStreamResponse, isFiltering]);
 
   const handleFindRecipes = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoadingMessage("Searching local library...");
     setError(null);
-    setLlmResponse(null); // Clear previous LLM response
-    setSearchResults([]); // Clear previous search results
+    setSearchResults([]);
+    setIsFiltering(false);
+    responseBuffer.current = "";
 
-    if (!naturalLanguageQuery.trim() ||
-      naturalLanguageQuery.length < 5) {
-      setError(new Error("Please enter a meaningful recipe query."));
+    // Wait for the model to be ready if it isn't yet
+    if (!searchReady) {
+      setError(new Error(`Search Engine is loading... (${searchStatus})`));
       setLoading(false);
       return;
     }
 
-    if (!/[a-zA-Z]/.test(naturalLanguageQuery)) {
-      setError(new Error("Query must include at least one alphabet character."));
-      setLoading(false);
-      return;
-    }
-
-    if (naturalLanguageQuery.length > 500) {
-      setError(new Error("Query must be 500 characters or less."));
+    if (!naturalLanguageQuery.trim() || naturalLanguageQuery.length < 3) {
+      setError(new Error("Please enter a meaningful recipe query (min 3 chars)."));
       setLoading(false);
       return;
     }
 
     try {
-      const requestBody = {
-        query: naturalLanguageQuery,
-        dietaryRestrictions: dietaryRestrictions || null, // Send null if empty string
-        cuisinePreferences: cuisinePreferences || null,   // Send null if empty string
-        mealType: mealType || null,                       // Send null if empty string
-      };
+      console.log("Searching via Edge Engine:", naturalLanguageQuery);
 
-      console.log("Sending request to backend:", requestBody); // For debugging
+      // 1. Get Candidates (Vector Search)
+      // HYBRID SEARCH: Get top 100 semantically relevant results
+      const candidates = await search(naturalLanguageQuery, 100);
 
-      const response = await fetch(`${BACKEND_BASE_URL}/api/recipes/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody), // Send the complete requestBody
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      if (!candidates || candidates.length === 0) {
+        setSearchResults([]);
+        setLoading(false);
+        return;
       }
 
-      const data = await response.json();
-      console.log("Backend RAG Response:", data);
+      // 2. Hard Filter (Metadata Tags)
+      // Filter candidates based on selected dropdowns
+      const activeFilters = [dietaryRestrictions, cuisinePreferences, mealType].filter(Boolean);
 
-      // Set the LLM's generated response
-      setLlmResponse(data.llm_response);
+      let filteredResults = candidates;
 
-      // Format retrieved_recipes for RecipeCardList component
-      if (data.retrieved_recipes && Array.isArray(data.retrieved_recipes)) {
-        const formattedForCardList = data.retrieved_recipes.map(recipe => ({
-          id: recipe._id || recipe.title.replace(/\s+/g, '-').toLowerCase() + '-' + Date.now(), // Add Date.now() for uniqueness if _id is missing
-          name: recipe.title,
-          cookTime: recipe.score ? `${Math.round(recipe.score * 100)}% Match` : 'N/A',
-          imageUrl: recipe.imageUrl,
-          // Ensure these are passed if RecipeCard (or detail page) expects them:
-          ingredients: recipe.ingredients,
-          instructions: recipe.instructions,
-          // You might want to pass the full recipe object to RecipeCard
-          // if your RecipeCard or the detail page uses it directly for full display.
-          // For now, these specific fields are sufficient for the card display.
-        }));
-        setSearchResults(formattedForCardList);
-      } else {
-        setSearchResults([]); // Ensure empty array if no recipes are retrieved
+      if (activeFilters.length > 0) {
+        setLoadingMessage("Filtering results...");
+        filteredResults = candidates.filter(recipe => {
+          if (!recipe.tags) return false;
+          // Check if recipe tags include ALL selected filters
+          return activeFilters.every(filter => recipe.tags.includes(filter));
+        });
       }
+
+      // 3. Display Top Results
+      // If filtering leaves too few results, you might optionally show partial matches, 
+      // but for "Hard Filter" we strictly show matches.
+      const finalResults = filteredResults.slice(0, 20); // Top 20 relevant & filtered
+
+      setSearchResults(formatRecipes(finalResults));
+
+      // Clear AI Filtering state since we aren't using it
+      setIsFiltering(false);
+      setLoading(false);
 
     } catch (err) {
       setError(err);
-      console.error("Failed to fetch recipes from backend:", err);
-      setSearchResults([]); // Clear results on error
-    } finally {
+      console.error("Failed to search recipes:", err);
+      setSearchResults([]);
       setLoading(false);
+      setIsFiltering(false);
     }
+  };
+
+  const formatRecipes = (list) => {
+    return list.map(recipe => ({
+      id: recipe.i,
+      name: recipe.t,
+      cookTime: recipe.score ? `${Math.round(recipe.score * 100)}% Match` : 'N/A',
+      imageUrl: recipe.img || getRandomFallbackImageUrl(),
+      ingredients: recipe.ing,
+      instructions: recipe.ins,
+    }));
   };
 
   const dietaryOptions = ['Vegetarian', 'Vegan', 'Gluten Free', 'Dairy Free', 'Ketogenic'];
@@ -185,7 +202,7 @@ function FindRecipePage({ currentUser }) {
                       aria-hidden="true"
                       className="me-2"
                     />
-                    Searching...
+                    {loadingMessage}
                   </>
                 ) : (
                   'Find Recipes'
@@ -200,7 +217,7 @@ function FindRecipePage({ currentUser }) {
           {loading && (
             <div className="text-center my-4">
               <Spinner animation="border" variant="primary" />
-              <p className="text-muted mt-2">Searching for recipes...</p>
+              <p className="text-muted mt-2">{loadingMessage}</p>
             </div>
           )}
 
@@ -215,19 +232,14 @@ function FindRecipePage({ currentUser }) {
                 // Display RecipeCardList if recipes are found
                 <RecipeCardList recipes={searchResults} currentUser={currentUser} />
               ) : (
-                // Display LLM response if no recipes were found
-                llmResponse && <p className="llm-message text-center text-muted">No recipes found for your criteria. Try a different query!</p>
+                // Display message if no recipes were found
+                naturalLanguageQuery.trim() && <p className="text-center text-muted">No recipes found for your criteria. Try a different query!</p>
               )}
             </>
           )}
 
-          {/* No recipes found message (only show if not loading, no error, no results, and a query was made) */}
-          {!loading && !error && searchResults.length === 0 && naturalLanguageQuery.trim() && !llmResponse && (
-            <p className="text-center text-muted">No recipes found for your criteria. Try a different query!</p>
-          )}
-
         </Container>
-      </section>
+      </section >
       <Footer></Footer>
     </>
   );

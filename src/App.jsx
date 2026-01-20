@@ -12,6 +12,7 @@ import RecipeDetailSpoon from './pages/RecipeDetailSpoon';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage'; // New SignUp page
 import MembershipPage from './pages/MembershipPage';
+import TestSearchPage from './pages/TestSearchPage';
 
 function App() {
   const location = useLocation();
@@ -56,9 +57,9 @@ function App() {
         <Route path="/recipe/:id" element={<RecipeDetailPage currentUser={currentUser} />} />
         <Route path="/spoon/:id" element={<RecipeDetailSpoon currentUser={currentUser} />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} /> 
-        <Route path="/membership" element={<MembershipPage currentUser={currentUser} />}
-        />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/membership" element={<MembershipPage currentUser={currentUser} />} />
+        <Route path="/test" element={<TestSearchPage />} />
       </Routes>
     </div>
   );
